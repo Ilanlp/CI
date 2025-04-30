@@ -31,6 +31,4 @@ sources:
       - name: RAW_OFFRE
         identifier: RAW_OFFRE
         description: "Table d'analyses brutes des offres"
-      - name: RAW_OFFRE_BIS
-        identifier: RAW_OFFRE_BIS
-        description: "Table d'analyses brutes des offres plus petite "
+      
