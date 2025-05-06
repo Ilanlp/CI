@@ -71,7 +71,7 @@ def model(dbt, session):
                when(pays_match,    1).otherwise(0).alias("is_france"),
                when(dept_code_match, 1).otherwise(0).alias("is_dept_code"),
                when(name_match,      1).otherwise(0).alias("is_name"),
-               when(dept_match,      1).otherwise(0).alias("is_dept"),
+               when(dept_match,      1).otherwise(0).ali as("is_dept"),
                when(region_match,    1).otherwise(0).alias("is_region"),
                distance_km.alias("distance_km"),
                dim_lieu["population"].alias("population")
