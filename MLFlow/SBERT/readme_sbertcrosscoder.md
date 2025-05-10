@@ -213,4 +213,130 @@ python sbert_crossencoder.py --use-tfidf --tfidf-weight 0.4 --use-cross-encoder 
 ```
 
 ### Limitation à 2000 offres d'emploi
+Le script limite automatiquement le traitement aux 2000 premières offres d'emploi pour optimiser les performances.## Interprétation des résultats
+
+### Scores de matching
+- **Score global > 0.8** : Correspondance excellente
+- **Score global 0.6-0.8** : Bonne correspondance
+- **Score global 0.4-0.6** : Correspondance moyenne
+- **Score global < 0.4** : Correspondance faible
+
+### Analyse de la contribution des différents scores
+- **score_sbert** élevé : Bonne correspondance sémantique globale
+- **score_tfidf** élevé : Bonne correspondance de mots-clés spécifiques
+- **score_cross_encoder** élevé : Bonne pertinence contextuelle
+
+### Exemple d'interprétation
+
+```
+id_candidat,id_offre,score_global,score_bi_encoder,score_cross_encoder,score_sbert,score_tfidf,titre,...
+0,6081594,0.7171,0.7171,0.0,0.7212,0.0,Data Scientist Confirmé (H/F),...
+```
+
+Cette ligne indique:
+- Le candidat 0 et l'offre 6081594 ont un score de matching de 0.7171 (bonne correspondance)
+- Le matching a été effectué avec le Bi-Encoder uniquement (pas de Cross-Encoder)
+- Le score est entièrement basé sur SBERT (pas de TF-IDF)
+- Le poste correspondant est "Data Scientist Confirmé (H/F)"
+
+## Comprendre les différents scores
+
+Le système génère plusieurs types de scores qui peuvent être interprétés différemment:
+
+### Score SBERT vs Score Bi-Encoder
+
+**Score SBERT**
+- Représente le score brut obtenu directement du modèle SBERT (Sentence-BERT) sans aucune modification.
+- C'est la similarité cosinus entre les embeddings vectoriels des textes, tels que générés par le modèle SBERT.
+- Reflète la similarité sémantique pure entre le profil du candidat et la description de l'offre.
+
+**Score Bi-Encoder**
+- Dans le script, le terme "Bi-Encoder" désigne l'**ensemble de la première phase** du pipeline de matching, qui peut inclure:
+  - Le score SBERT (toujours présent)
+  - Le score TF-IDF (si l'option `--use-tfidf` est activée)
+  - Leur combinaison pondérée (si les deux sont présents)
+
+### Relation entre ces scores
+
+1. **Scénario sans TF-IDF** (option `--use-tfidf` non activée):
+   ```
+   Score Bi-Encoder = Score SBERT
+   ```
+   Dans ce cas, les deux scores sont identiques car SBERT est la seule méthode d'encodage utilisée.
+
+2. **Scénario avec TF-IDF** (option `--use-tfidf` activée):
+   ```
+   Score Bi-Encoder = (1 - tfidf_weight) * Score SBERT + tfidf_weight * Score TF-IDF
+   ```
+   Le score Bi-Encoder devient une combinaison pondérée où:
+   - `tfidf_weight` est le poids donné à TF-IDF (par défaut: 0.3)
+   - La différence entre Score SBERT et Score Bi-Encoder reflète l'influence de TF-IDF
+
+### Dans le fichier CSV de résultats
+
+- `score_sbert`: Le score pur du modèle SBERT
+- `score_tfidf`: Le score pur de l'analyse TF-IDF
+- `score_bi_encoder`: Le score combiné de la première phase (SBERT + TF-IDF si activé)
+- `score_cross_encoder`: Le score de la seconde phase (si Cross-Encoder est activé)
+- `score_global`: Le score final, qui peut être:
+  - Égal au `score_bi_encoder` (si Cross-Encoder n'est pas activé)
+  - Une combinaison pondérée de `score_bi_encoder` et `score_cross_encoder` (si Cross-Encoder est activé)
+
+### Exemple concret
+
+Considérons ces valeurs hypothétiques:
+- `score_sbert = 0.75`
+- `score_tfidf = 0.60`
+- `tfidf_weight = 0.3`
+
+Le `score_bi_encoder` serait calculé comme:
+```
+score_bi_encoder = (1 - 0.3) * 0.75 + 0.3 * 0.60
+                  = 0.7 * 0.75 + 0.3 * 0.60
+                  = 0.525 + 0.18
+                  = 0.705
+```
+
+Dans ce cas:
+- `score_sbert` (0.75) montre une bonne similarité sémantique
+- `score_tfidf` (0.60) indique une correspondance moyenne des mots-clés
+- `score_bi_encoder` (0.705) combine ces deux aspects, légèrement inférieur au score SBERT pur en raison de l'influence modérée de TF-IDF
+
+### Pourquoi cette distinction est importante
+
+Cette distinction permet d'analyser:
+1. La contribution spécifique de chaque technique au score global
+2. Si la correspondance est davantage sémantique (score SBERT élevé) ou lexicale (score TF-IDF élevé)
+3. L'effet des différentes pondérations sur le score final
+
+En examinant ces différents scores, vous pouvez déterminer si un bon matching est dû à une compréhension sémantique générale ou à des correspondances précises de mots-clés, ce qui est particulièrement utile dans le contexte du matching offres d'emploi-candidats.
+
+## Exemples d'utilisation
+
+### Utilisation de base (SBERT uniquement)
+```bash
+python sbert_crossencoder.py
+```
+
+### Avec TF-IDF (pour améliorer la détection des compétences spécifiques)
+```bash
+python sbert_crossencoder.py --use-tfidf
+```
+
+### Avec Cross-Encoder (pour une analyse approfondie)
+```bash
+python sbert_crossencoder.py --use-cross-encoder
+```
+
+### Configuration complète (recommandée)
+```bash
+python sbert_crossencoder.py --use-tfidf --use-cross-encoder
+```
+
+### Avec paramètres personnalisés
+```bash
+python sbert_crossencoder.py --use-tfidf --tfidf-weight 0.4 --use-cross-encoder --cross-encoder-weight 0.8 --top-n 20
+```
+
+### Limitation à 2000 offres d'emploi
 Le script limite automatiquement le traitement aux 2000 premières offres d'emploi pour optimiser les performances.
