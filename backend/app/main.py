@@ -11,6 +11,7 @@ from app.api.routes_lieu import router_lieu
 from app.api.routes_metier import router_metier
 from app.api.routes_romecode import router_romecode
 from app.api.routes_seniorite import router_seniorite
+from app.auth import verify_basic_auth
 import time
 import uvicorn
 
@@ -50,6 +51,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configuration CORS (votre code existant)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Middleware d'authentification
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    """Middleware d'authentification pour les méthodes PUT, POST, DELETE"""
+    
+    # Vérifier si la méthode nécessite une authentification
+    if request.method in ["PUT", "POST", "DELETE", "PATCH"]:
+        print(f"Authentification requise pour {request.method} {request.url.path}")  # Debug
+        
+        # Récupérer l'header d'autorisation
+        auth_header = request.headers.get("authorization")
+        print(f"Auth header reçu: {auth_header}")  # Debug
+        
+        # Vérifier les credentials
+        if not verify_basic_auth(auth_header):
+            print("Authentification échouée")  # Debug
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "success": False,
+                    "message": "Authentification requise pour cette opération",
+                    "data": None,
+                },
+                headers={"WWW-Authenticate": "Basic realm=\"API\""},
+            )
+        
+        print("Authentification réussie")  # Debug
+    
+    # Si authentifié ou méthode non soumise à auth, continuer
+    response = await call_next(request)
+    return response
 
 # Middleware pour le logging des requêtes
 @app.middleware("http")
