@@ -1,0 +1,60 @@
+annotated-types==0.7.0
+anyio==4.9.0
+certifi==2025.1.31
+charset-normalizer==3.4.1
+contourpy==1.3.1
+colorlog==6.9.0
+cycler==0.12.1
+fonttools==4.57.0
+h11==0.14.0
+httpcore==1.0.7
+httpx==0.28.1
+idna==3.10
+kiwisolver==1.4.8
+markdown-it-py==3.0.0
+matplotlib==3.10.1
+mdurl==0.1.2
+numpy==2.2.4
+packaging==24.2
+pandas==2.2.3
+pillow==11.1.0
+pydantic==2.11.2
+pydantic_core==2.33.1
+Pygments==2.19.1
+pyparsing==3.2.3
+python-dateutil==2.9.0.post0
+python-dotenv==1.1.0
+pytz==2025.2
+requests==2.32.3
+rich==14.0.0
+six==1.17.0
+sniffio==1.3.1
+snowflake.core==1.5.0
+snowflake-connector-python==3.15.0
+typing-inspection==0.4.0
+typing_extensions==4.13.1
+tzdata==2025.2
+urllib3==2.3.0
+
+# Core dependencies
+# pydantic>=2.0.0,<3.0.0    # Pour la validation des données et sérialisation
+# requests>=2.28.0          # Pour les requêtes HTTP
+# python-dateutil>=2.8.2    # Pour la manipulation des dates
+
+# Data analysis
+# pandas>=1.5.0             # Pour l'analyse de données
+# numpy>=1.23.0             # Pour les calculs numériques
+
+# Data visualization
+# matplotlib>=3.6.0         # Pour la création de graphiques de base
+seaborn>=0.12.0           # Pour des visualisations statistiques améliorées
+
+# Optional dependencies
+tqdm>=4.64.0              # Pour les barres de progression
+colorama>=0.4.5           # Pour la coloration dans la console
+
+# Development dependencies
+pytest>=7.0.0             # Pour les tests unitaires
+black>=22.8.0             # Pour le formatage du code
+isort>=5.10.1             # Pour trier les imports
+flake8>=5.0.4             # Pour l'analyse statique du code

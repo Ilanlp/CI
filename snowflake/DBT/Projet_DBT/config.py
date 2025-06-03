@@ -40,7 +40,7 @@ profile_data = {
 }
 
 # Dossier de sortie
-output_dir = "/usr/.dbt"
+output_dir = "/home/node/.dbt"
 
 # Écriture dans le fichier profiles.yml
 output_path = os.path.join(output_dir, "profiles.yml")

@@ -191,7 +191,7 @@ class JobDataNormalizer:
 
         # Paramètres de recherche
         search_params = {
-            "what": search_terms,
+            "what_or": search_terms,
             "results_per_page": results_per_page,
             "max_days_old": max_days_old,
             "sort_by": SortBy.DATE,
@@ -713,10 +713,8 @@ class JobDataNormalizer:
                 continue
 
             # Ajouter chaque terme de recherche à la liste des paramètres
-            for search in search_terms:
-                search_params.append(
-                    (search, location, adjusted_max, code, max_days_old)
-                )
+            joined_terms = " ".join(search_terms)
+            search_params.append((joined_terms, location, adjusted_max, code, max_days_old))
 
         if not search_params:
             logger.warning(

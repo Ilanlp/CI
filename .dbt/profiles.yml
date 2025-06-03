@@ -1,0 +1,13 @@
+projet_dbt:
+  outputs:
+    dev:
+      account: veb24721.us-west-2
+      database: JOB_MARKET
+      password: Cll3k#lj1o^5Wq
+      role: ACCOUNTADMIN
+      schema: PUBLIC
+      threads: 1
+      type: snowflake
+      user: ILANLP
+      warehouse: QUERY
+  target: dev

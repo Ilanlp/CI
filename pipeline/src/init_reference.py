@@ -3,7 +3,7 @@ import re
 
 
 rome40 = pd.read_csv(
-    filepath_or_buffer="./../../data/gouv/rome40.csv",
+    filepath_or_buffer="./data/rome40.csv",
     sep=";",
     header=None,
     names=["A", "B", "C", "D", "E"],

@@ -1,111 +1,110 @@
-ID,id_domaine,code_domaine,nom_domaine
-0,1,A11,Engins agricoles et forestiers
-1,2,A12,Espaces naturels et espaces verts
-2,3,A13,Etudes et assistance technique
-3,4,A14,Production
-4,5,A15,Soins aux animaux
-5,6,B11,Arts plastiques
-6,7,B12,Céramique
-7,8,B13,Décoration
-8,9,B14,Fibres et papier
-9,10,B15,Instruments de musique
-10,11,B16,"Métal, verre, bijouterie et horlogerie"
-11,12,B17,Taxidermie
-12,13,B18,Tissu et cuirs
-13,14,C11,Assurance
-14,15,C12,Banque
-15,16,C13,Finance
-16,17,C14,Gestion administrative banque et assurances
-17,18,C15,Immobilier
-18,19,D11,Commerce alimentaire et métiers de bouche
-19,20,D12,Commerce non alimentaire et de prestations de confort
-20,21,D13,Direction de magasin de détail
-21,22,D14,Force de vente
-22,23,D15,Grande distribution
-23,24,E11,Edition et communication
-24,25,E12,Images et sons
-25,26,E13,Industries graphiques
-26,27,E14,Publicité
-27,28,F11,Conception et études
-28,29,F12,Conduite et encadrement de chantier - travaux
-29,30,F13,Engins de chantier
-30,31,F14,Extraction
-31,32,F15,Montage de structures
-32,33,F16,Second oeuvre
-33,34,F17,Travaux et gros oeuvre
-34,35,G11,Accueil et promotion touristique
-35,36,G12,Animation d'activités de loisirs
-36,37,G13,"Conception, commercialisation et vente de produits touristiques"
-37,38,G14,Gestion et direction
-38,39,G15,Personnel d'étage en hôtellerie
-39,40,G16,Production culinaire
-40,41,G17,Accueil en hôtellerie
-41,42,G18,Service
-42,43,H11,Affaires et support technique client
-43,44,H12,"Conception, recherche, études et développement"
-44,45,H13,Hygiène Sécurité Environnement -HSE- industriels
-45,46,H14,Méthodes et gestion industrielles
-46,47,H15,Qualité et analyses industrielles
-47,48,H21,Alimentaire
-48,49,H22,Bois
-49,50,H23,Chimie et pharmacie
-50,51,H24,Cuir et textile
-51,52,H25,"Direction, encadrement et pilotage de fabrication et production industrielles"
-52,53,H26,Electronique et électricité
-53,54,H27,Energie
-54,55,H28,"Matériaux de construction, céramique et verre"
-55,56,H29,"Mécanique, travail des métaux et outillage"
-56,57,H31,Papier et carton
-57,58,H32,"Plastique, caoutchouc"
-58,59,H33,Préparation et conditionnement
-59,60,H34,Traitements thermiques et traitements de surfaces
-60,61,I11,Encadrement
-61,62,I12,Entretien technique
-62,63,I13,"Equipements de production, équipements collectifs"
-63,64,I14,Equipements domestiques et informatique
-64,65,I15,Travaux d'accès difficile
-65,66,I16,"Véhicules, engins, aéronefs"
-66,67,J11,Praticiens médicaux
-67,68,J12,Praticiens médico-techniques
-68,69,J13,Professionnels médico-techniques
-69,70,J14,Rééducation et appareillage
-70,71,J15,Soins paramédicaux
-71,72,K11,Accompagnement de la personne
-72,73,K12,"Action sociale, socio-éducative et socio-culturelle"
-73,74,K13,Aide à la vie quotidienne
-74,75,K14,Conception et mise en oeuvre des politiques publiques
-75,76,K15,Contrôle public
-76,77,K16,Culture et gestion documentaire
-77,78,K17,"Défense, sécurité publique et secours"
-78,79,K18,Développement territorial et emploi
-79,80,K19,Droit
-80,81,K21,Formation initiale et continue
-81,82,K22,Nettoyage et propreté industriels
-82,83,K23,Propreté et environnement urbain
-83,84,K24,Recherche
-84,85,K25,Sécurité privée
-85,86,K26,Services funéraires
-86,87,L11,Animation de spectacles
-87,88,L12,Artistes - interprètes du spectacle
-88,89,L13,Conception et production de spectacles
-89,90,L14,Sport professionnel
-90,91,L15,Techniciens du spectacle
-91,92,M11,Achats
-92,93,M12,Comptabilité et gestion
-93,94,M13,Direction d'entreprise
-94,95,M14,Organisation et études
-95,96,M15,Ressources humaines
-96,97,M16,Secrétariat et assistance
-97,98,M17,"Stratégie commerciale, marketing et supervision des ventes"
-98,99,M18,Systèmes d'information et de télécommunication
-99,100,N11,"Magasinage, manutention des charges et déménagement"
-100,101,N12,Organisation de la circulation des marchandises
-101,102,N13,Personnel d'encadrement de la logistique
-102,103,N21,Personnel navigant du transport aérien
-103,104,N22,Personnel sédentaire du transport aérien
-104,105,N31,Personnel navigant du transport maritime et fluvial
-105,106,N32,Personnel sédentaire du transport maritime et fluvial
-106,107,N41,Personnel de conduite du transport routier
-107,108,N42,Personnel d'encadrement du transport routier
-108,109,N43,Personnel navigant du transport terrestre
-109,110,N44,Personnel sédentaire du transport ferroviaire et réseau filo guidé
+A11,Engins agricoles et forestiers
+A12,Espaces naturels et espaces verts
+A13,Etudes et assistance technique
+A14,Production
+A15,Soins aux animaux
+B11,Arts plastiques
+B12,Céramique
+B13,Décoration
+B14,Fibres et papier
+B15,Instruments de musique
+B16,"Métal, verre, bijouterie et horlogerie"
+B17,Taxidermie
+B18,Tissu et cuirs
+C11,Assurance
+C12,Banque
+C13,Finance
+C14,Gestion administrative banque et assurances
+C15,Immobilier
+D11,Commerce alimentaire et métiers de bouche
+D12,Commerce non alimentaire et de prestations de confort
+D13,Direction de magasin de détail
+D14,Force de vente
+D15,Grande distribution
+E11,Edition et communication
+E12,Images et sons
+E13,Industries graphiques
+E14,Publicité
+F11,Conception et études
+F12,Conduite et encadrement de chantier - travaux
+F13,Engins de chantier
+F14,Extraction
+F15,Montage de structures
+F16,Second oeuvre
+F17,Travaux et gros oeuvre
+G11,Accueil et promotion touristique
+G12,Animation d'activités de loisirs
+G13,"Conception, commercialisation et vente de produits touristiques"
+G14,Gestion et direction
+G15,Personnel d'étage en hôtellerie
+G16,Production culinaire
+G17,Accueil en hôtellerie
+G18,Service
+H11,Affaires et support technique client
+H12,"Conception, recherche, études et développement"
+H13,Hygiène Sécurité Environnement -HSE- industriels
+H14,Méthodes et gestion industrielles
+H15,Qualité et analyses industrielles
+H21,Alimentaire
+H22,Bois
+H23,Chimie et pharmacie
+H24,Cuir et textile
+H25,"Direction, encadrement et pilotage de fabrication et production industrielles"
+H26,Electronique et électricité
+H27,Energie
+H28,"Matériaux de construction, céramique et verre"
+H29,"Mécanique, travail des métaux et outillage"
+H31,Papier et carton
+H32,"Plastique, caoutchouc"
+H33,Préparation et conditionnement
+H34,Traitements thermiques et traitements de surfaces
+I11,Encadrement
+I12,Entretien technique
+I13,"Equipements de production, équipements collectifs"
+I14,Equipements domestiques et informatique
+I15,Travaux d'accès difficile
+I16,"Véhicules, engins, aéronefs"
+J11,Praticiens médicaux
+J12,Praticiens médico-techniques
+J13,Professionnels médico-techniques
+J14,Rééducation et appareillage
+J15,Soins paramédicaux
+K11,Accompagnement de la personne
+K12,"Action sociale, socio-éducative et socio-culturelle"
+K13,Aide à la vie quotidienne
+K14,Conception et mise en oeuvre des politiques publiques
+K15,Contrôle public
+K16,Culture et gestion documentaire
+K17,"Défense, sécurité publique et secours"
+K18,Développement territorial et emploi
+K19,Droit
+K21,Formation initiale et continue
+K22,Nettoyage et propreté industriels
+K23,Propreté et environnement urbain
+K24,Recherche
+K25,Sécurité privée
+K26,Services funéraires
+L11,Animation de spectacles
+L12,Artistes - interprètes du spectacle
+L13,Conception et production de spectacles
+L14,Sport professionnel
+L15,Techniciens du spectacle
+M11,Achats
+M12,Comptabilité et gestion
+M13,Direction d'entreprise
+M14,Organisation et études
+M15,Ressources humaines
+M16,Secrétariat et assistance
+M17,"Stratégie commerciale, marketing et supervision des ventes"
+M18,Systèmes d'information et de télécommunication
+N11,"Magasinage, manutention des charges et déménagement"
+N12,Organisation de la circulation des marchandises
+N13,Personnel d'encadrement de la logistique
+N21,Personnel navigant du transport aérien
+N22,Personnel sédentaire du transport aérien
+N31,Personnel navigant du transport maritime et fluvial
+N32,Personnel sédentaire du transport maritime et fluvial
+N41,Personnel de conduite du transport routier
+N42,Personnel d'encadrement du transport routier
+N43,Personnel navigant du transport terrestre
+N44,Personnel sédentaire du transport ferroviaire et réseau filo guidé

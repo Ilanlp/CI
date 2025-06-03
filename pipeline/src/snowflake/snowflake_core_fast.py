@@ -8,7 +8,6 @@ from snowflake.connector.pandas_tools import write_pandas
 import pandas as pd
 from dotenv import load_dotenv
 from colorlog import ColoredFormatter
-import time
 
 
 logger = logging.getLogger("init")
@@ -97,7 +96,7 @@ class SnowflakeCore:
             result = self.cursor.fetchone()
             return result is not None and result[0] == 1
         except Exception as e:
-            #print(f"Erreur lors de la vérification de la connexion: {str(e)}")
+            print(f"Erreur lors de la vérification de la connexion: {str(e)}")
             return False
 
     def create_stage(self):
@@ -1016,9 +1015,6 @@ class SnowflakeCore:
             return False
 
         try:
-            # Utiliser la base de données avant de vérifier
-            self.cursor.execute(f"USE DATABASE {database}")
-            
             # Vérifier si la table existe
             self.cursor.execute(
                 f"""
@@ -1045,234 +1041,108 @@ class SnowflakeCore:
             row_count = self.cursor.fetchone()[0]
             return row_count > 0
 
-        except Exception:
-            # Retourner False silencieusement en cas d'erreur
-            return False
-
-    def load_all_jobs_to_raw_offre(self, database, schema, file_path):
-        """
-        Charge le fichier all_jobs.csv.gz dans la table RAW_OFFRE en mode append.
-        
-        Args:
-            database (str): Nom de la base de données
-            schema (str): Nom du schéma
-            file_path (str): Chemin du fichier all_jobs.csv.gz
-        """
-        try:
-            # Connexion et préparation
-            self.connect()
-            self.filepath = os.path.abspath(file_path)
-            self.filepath_normalise = self.filepath.replace("\\", "/")
-            self.filename = "ALL_JOBS"  # Nom fixe pour le stage
-            
-            # Configuration de la base et du schéma
-            self.cursor.execute(f"USE DATABASE {database}")
-            self.cursor.execute(f"USE SCHEMA {schema}")
-            
-            # Création du format de fichier pour CSV compressé
-            format_name = "CSV_GZ_FORMAT"
-            self.cursor.execute(f"""
-                CREATE FILE FORMAT IF NOT EXISTS {format_name}
-                TYPE = CSV
-                FIELD_DELIMITER = ','
-                SKIP_HEADER = 1
-                NULL_IF = ''
-                FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-                DATE_FORMAT = AUTO
-                TIMESTAMP_FORMAT = AUTO
-                COMPRESSION = GZIP
-            """)
-            
-            # Création du stage et chargement du fichier
-            self.create_stage()
-            
-            # Nom complet de la table
-            full_table = f"{database}.{schema}.RAW_OFFRE"
-            
-            # Création d'une table temporaire pour le chargement
-            temp_table = f"TEMP_ALL_JOBS_{int(time.time())}"
-            self.cursor.execute(f"CREATE TEMPORARY TABLE {temp_table} LIKE {full_table}")
-            
-            # Copie dans la table temporaire
-            self.cursor.execute(f"""
-                COPY INTO {temp_table}
-                FROM @{self.filename}
-                FILE_FORMAT = {format_name}
-            """)
-            
-            # Insertion dans la table principale
-            self.cursor.execute(f"""
-                INSERT INTO {full_table}
-                SELECT * FROM {temp_table}
-            """)
-            
-            # Récupération du nombre de lignes chargées
-            rows_inserted = self.cursor.rowcount
-            logger.info(f"Chargement réussi dans {full_table}: {rows_inserted} lignes ajoutées")
-            
-            # Nettoyage
-            self.cursor.execute(f"DROP TABLE {temp_table}")
-            self.drop_stage()
-            
-            return True
-            
         except Exception as e:
-            logger.error(f"Erreur lors du chargement de all_jobs: {str(e)}")
+            print(
+                f"Erreur lors de la vérification de la table {database}.{schema_name}.{table_name}: {str(e)}"
+            )
             return False
-        finally:
-            if self.cursor:
-                self.cursor.close()
-            if self.connection:
-                self.connection.close()
-    
-    def load_all_jobs_to_raw_offre2(self, database, schema, file_path):
-        """
-        Charge le fichier all_jobs.csv.gz dans la table RAW_OFFRE en mode append,
-        en ignorant la colonne auto-incrémentée id_offre.
-        """
-        try:
-            import time
 
-            # Connexion et préparation
-            self.connect()
-            self.filepath = os.path.abspath(file_path)
-            self.filepath_normalise = self.filepath.replace("\\", "/")
-            self.filename = "ALL_JOBS"  # Nom fixe pour le stage
-
-            # Configuration de la base et du schéma
-            self.cursor.execute(f"USE DATABASE {database}")
-            self.cursor.execute(f"USE SCHEMA {schema}")
-
-            # Création du format de fichier pour CSV compressé
-            format_name = "CSV_GZ_FORMAT"
-            self.cursor.execute(f"""
-                CREATE FILE FORMAT IF NOT EXISTS {format_name}
-                TYPE = CSV
-                FIELD_DELIMITER = ','
-                SKIP_HEADER = 1
-                NULL_IF = ''
-                FIELD_OPTIONALLY_ENCLOSED_BY = '"'
-                DATE_FORMAT = AUTO
-                TIMESTAMP_FORMAT = AUTO
-                COMPRESSION = GZIP
-            """)
-
-            # Création du stage et chargement du fichier
-            self.create_stage()
-
-            # Nom complet de la table
-            full_table = f"{database}.{schema}.RAW_OFFRE"
-
-            # Récupère les colonnes de RAW_OFFRE sauf id_offre
-            self.cursor.execute(f"""
-                SELECT COLUMN_NAME
-                FROM INFORMATION_SCHEMA.COLUMNS
-                WHERE TABLE_NAME = 'RAW_OFFRE'
-                  AND TABLE_SCHEMA = '{schema}'
-                  AND COLUMN_NAME != 'ID_OFFRE'
-                ORDER BY ORDINAL_POSITION
-            """)
-            cols = [row[0] for row in self.cursor.fetchall()]
-            column_definitions = ", ".join(f'"{col}" VARCHAR' for col in cols)
-
-            # Crée une table temporaire avec les bonnes colonnes
-            temp_table = f"TEMP_ALL_JOBS_{int(time.time())}"
-            self.cursor.execute(f"""
-                CREATE TEMPORARY TABLE {temp_table} ({column_definitions})
-            """)
-
-            # Copie dans la table temporaire
-            self.cursor.execute(f"""
-                COPY INTO {temp_table}
-                FROM @{self.filename}
-                FILE_FORMAT = {format_name}
-            """)
-
-            # Insertion dans la table principale, sans ID_OFFRE
-            columns_str = ", ".join(f'"{col}"' for col in cols)
-            self.cursor.execute(f"""
-                INSERT INTO {full_table} ({columns_str})
-                SELECT {columns_str}
-                FROM {temp_table}
-            """)
-
-            # Récupération du nombre de lignes chargées
-            rows_inserted = self.cursor.rowcount
-            logger.info(f"Chargement réussi dans {full_table}: {rows_inserted} lignes ajoutées")
-
-            # Nettoyage
-            self.cursor.execute(f"DROP TABLE {temp_table}")
-            self.drop_stage()
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Erreur lors du chargement de all_jobs: {str(e)}")
-            return False
-        finally:
-            if self.cursor:
-                self.cursor.close()
-            if self.connection:
-                self.connection.close()
-
+def load_table_parallel(loader, database, schema, table, file_path, file_format_name=None, file_format_schema=None):
+    """
+    Fonction pour charger une table en parallèle.
+    Crée une nouvelle instance de SnowflakeCore pour chaque chargement.
+    """
+    try:
+        # Créer une nouvelle instance pour chaque thread
+        thread_loader = SnowflakeCore()
+        success = thread_loader.process_file_with_copy(
+            database,
+            schema,
+            table,
+            file_path,
+            file_format_name,
+            file_format_schema
+        )
+        if success:
+            logging.info(f"Traitement du fichier {table} terminé avec succès")
+        else:
+            logging.error(f"Échec du traitement du fichier {table}")
+        return success
+    except Exception as e:
+        logging.error(f"Erreur lors du chargement de {table}: {str(e)}")
+        return False
 
 if __name__ == "__main__":
-    loader = SnowflakeCore()
+    import concurrent.futures
+    from pathlib import Path
+
+    # Configuration des tâches de chargement
     path_absolu = Path(__file__).resolve()
     output_dir = f"{path_absolu.parents[1]}/data/"
 
-    # Recherche du fichier all_jobs_*.csv.gz le plus récent
-    import glob
-    all_jobs_files = glob.glob(f"{output_dir}/all_jobs_*.csv.gz")
-    if not all_jobs_files:
-        logger.error("Aucun fichier all_jobs_*.csv.gz trouvé dans le dossier de données.")
-        exit(1)
-    latest_file = max(all_jobs_files, key=os.path.getmtime)
-    logger.info(f"Fichier le plus récent détecté : {latest_file}")
-
-    # Chargement du fichier all_jobs.csv.gz le plus récent dans RAW_OFFRE
-    success = loader.load_all_jobs_to_raw_offre2(
-        "JOB_MARKET",
-        "RAW",
-        latest_file
-    )
-
-    if success:
-        logger.info("Chargement du fichier all_jobs.csv.gz dans RAW_OFFRE réussi")
-    else:
-        logger.error("Échec du chargement du fichier all_jobs.csv.gz dans RAW_OFFRE")
-
-    # Configuration des tables à charger
-    tables_to_load = [
-        # Tables RAW
-        {"database": "JOB_MARKET", "schema": "RAW", "table": "RAW_CANDIDAT", 
-         "file": "RAW_CANDIDAT.csv", "format": "CSV_ERROR", "format_schema": "PUBLIC"},
-        {"database": "JOB_MARKET", "schema": "RAW", "table": "RAW_SOFTSKILL", 
-         "file": "RAW_SOFTSKILL.csv", "format": "CLASSIC_CSV", "format_schema": "PUBLIC"},
-        {"database": "JOB_MARKET", "schema": "RAW", "table": "RAW_ROME_METIER", 
-         "file": "RAW_ROME_METIER.csv", "format": "CLASSIC_CSV", "format_schema": "PUBLIC"},
+    # Liste des tâches de chargement à exécuter en parallèle
+    loading_tasks = [
+        # RAW Layer
+        ("JOB_MARKET", "RAW", "RAW_CANDIDAT", f"{output_dir}/RAW_CANDIDAT.csv", "CSV_ERROR", "PUBLIC"),
+        ("JOB_MARKET", "RAW", "RAW_SOFTSKILL", f"{output_dir}/RAW_SOFTSKILL.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "RAW", "RAW_ROME_METIER", f"{output_dir}/RAW_ROME_METIER.csv", "CLASSIC_CSV", "PUBLIC"),
         
-        # Tables SILVER et GOLD (dimensions)
-        *[{"database": "JOB_MARKET", "schema": layer, "table": f"DIM_{dim}", 
-            "file": f"DIM_{dim}.{'parquet' if dim == 'ENTREPRISE' else 'csv'}", 
-            "format": "CLASSIC_CSV", "format_schema": "PUBLIC"}
-          for layer in ["SILVER", "GOLD"]
-          for dim in ["STOPWORDS", "ENTREPRISE", "COMPETENCE", "CONTRAT", "DATE", "DOMAINE",
-                     "LIEU", "METIER", "ROMECODE", "SENIORITE", "SOFTSKILL", "TELETRAVAIL", "TYPE_ENTREPRISE"]]
+        # SILVER Layer
+        ("JOB_MARKET", "SILVER", "DIM_STOPWORDS", f"{output_dir}/DIM_STOPWORDS.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_ENTREPRISE", f"{output_dir}/DIM_ENTREPRISE.parquet", None, None),
+        ("JOB_MARKET", "SILVER", "DIM_COMPETENCE", f"{output_dir}/DIM_COMPETENCE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_CONTRAT", f"{output_dir}/DIM_CONTRAT.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_DATE", f"{output_dir}/DIM_DATE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_DOMAINE", f"{output_dir}/DIM_DOMAINE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_LIEU", f"{output_dir}/DIM_LIEU.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_METIER", f"{output_dir}/DIM_METIER.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_ROMECODE", f"{output_dir}/DIM_ROMECODE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_SENIORITE", f"{output_dir}/DIM_SENIORITE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_SOFTSKILL", f"{output_dir}/DIM_SOFTSKILL.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "SILVER", "DIM_TELETRAVAIL", f"{output_dir}/DIM_TELETRAVAIL.csv", "CLASSIC_CSV", "PUBLIC"),
+        
+        
+        # GOLD Layer
+        ("JOB_MARKET", "GOLD", "DIM_ENTREPRISE", f"{output_dir}/DIM_ENTREPRISE.parquet", None, None),
+        ("JOB_MARKET", "GOLD", "DIM_COMPETENCE", f"{output_dir}/DIM_COMPETENCE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_CONTRAT", f"{output_dir}/DIM_CONTRAT.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_DATE", f"{output_dir}/DIM_DATE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_DOMAINE", f"{output_dir}/DIM_DOMAINE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_LIEU", f"{output_dir}/DIM_LIEU.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_METIER", f"{output_dir}/DIM_METIER.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_ROMECODE", f"{output_dir}/DIM_ROMECODE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_SENIORITE", f"{output_dir}/DIM_SENIORITE.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_SOFTSKILL", f"{output_dir}/DIM_SOFTSKILL.csv", "CLASSIC_CSV", "PUBLIC"),
+        ("JOB_MARKET", "GOLD", "DIM_TELETRAVAIL", f"{output_dir}/DIM_TELETRAVAIL.csv", "CLASSIC_CSV", "PUBLIC"),
+       
     ]
 
-    # Chargement de toutes les tables
-    for table_config in tables_to_load:
-        success = loader.process_file_with_copy(
-            database=table_config["database"],
-            schema_name=table_config["schema"],
-            table_name=table_config["table"],
-            file_path=f"{output_dir}/{table_config['file']}",
-            file_format_name=table_config["format"],
-            file_format_schema=table_config["format_schema"]
-        )
+    # Créer une instance de base pour les tests de connexion
+    base_loader = SnowflakeCore()
+    
+    # Vérifier la connexion avant de commencer
+    if not base_loader.connect():
+        logging.error("Impossible de se connecter à Snowflake. Arrêt du programme.")
+        exit(1)
 
-        if success:
-            logger.info(f"Traitement du fichier {table_config['file']} terminé avec succès")
-        else:
-            logger.error(f"Échec du traitement du fichier {table_config['file']}")
+    # Exécuter les chargements en parallèle
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        # Soumettre toutes les tâches
+        future_to_task = {
+            executor.submit(load_table_parallel, base_loader, *task): task 
+            for task in loading_tasks
+        }
+        
+        # Attendre la fin de toutes les tâches et collecter les résultats
+        for future in concurrent.futures.as_completed(future_to_task):
+            task = future_to_task[future]
+            try:
+                success = future.result()
+                if success:
+                    logging.info(f"Tâche {task[2]} terminée avec succès")
+                else:
+                    logging.error(f"Échec de la tâche {task[2]}")
+            except Exception as e:
+                logging.error(f"Erreur lors de l'exécution de la tâche {task[2]}: {str(e)}")
+
+    logging.info("Tous les chargements sont terminés")

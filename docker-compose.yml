@@ -1,0 +1,382 @@
+version: "3.9"
+
+services:
+  # ===========================================
+  # SERVICES AIRFLOW
+  # ===========================================
+  airflow-postgres:
+    image: postgres:13
+    container_name: airflow-postgres
+    environment:
+      - POSTGRES_USER=${AIRFLOW_POSTGRES_USER:-airflow}
+      - POSTGRES_PASSWORD=${AIRFLOW_POSTGRES_PASSWORD:-airflow}
+      - POSTGRES_DB=${AIRFLOW_POSTGRES_DB:-airflow}
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    networks:
+      - jm_network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-redis:
+    image: redis:latest
+    container_name: airflow-redis
+    networks:
+      - jm_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 30s
+      retries: 50
+    restart: unless-stopped
+
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    container_name: airflow-webserver
+    depends_on:
+      - airflow-postgres
+      - airflow-redis
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
+      - _AIRFLOW_DB_UPGRADE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=${AIRFLOW_WWW_USER_USERNAME:-airflow}
+      - _AIRFLOW_WWW_USER_PASSWORD=${AIRFLOW_WWW_USER_PASSWORD:-airflow}
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-docker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "${AIRFLOW_WEB_PORT:-8080}:8080"
+    command: webserver
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - jm_network
+    profiles:
+      - airflow
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.1
+    container_name: airflow-scheduler
+    depends_on:
+      - airflow-webserver
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-docker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: scheduler
+    networks:
+      - jm_network
+    profiles:
+      - airflow
+    restart: unless-stopped
+
+  airflow-worker:
+    image: apache/airflow:2.7.1
+    container_name: airflow-worker
+    depends_on:
+      - airflow-scheduler
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://airflow-redis:6379/0
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@airflow-postgres/airflow
+      - AIRFLOW__CORE__FERNET_KEY=${AIRFLOW_FERNET_KEY:-}
+      - AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION=True
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-docker
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/plugins:/opt/airflow/plugins
+      - ./airflow/config:/opt/airflow/config
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./pipeline/src:/opt/airflow/pipeline
+      - ./MLFlow:/opt/airflow/mlflow
+    command: celery worker
+    networks:
+      - jm_network
+    profiles:
+      - airflow
+    deploy:
+      resources:
+        limits:
+          cpus: "${AIRFLOW_WORKER_CPU_LIMIT:-2.0}"
+          memory: ${AIRFLOW_WORKER_MEMORY_LIMIT:-4G}
+    restart: unless-stopped
+    group_add:
+      - "1001"
+
+  # ===========================================
+  # SERVICES MLFLOW
+  # ===========================================
+  mlflow-tracking:
+    container_name: mlflow_tracking
+    build:
+      context: ./MLFlow
+      dockerfile: Dockerfile.mlflow.tracking
+    ports:
+      - "${MLFLOW_EXTERNAL_PORT:-5010}:5000"
+    volumes:
+      - ./MLFlow/mlruns:/app/mlruns
+      - ./MLFlow/mlflow.db:/app/mlflow.db
+      - ./MLFlow/data:/app/data:ro
+    working_dir: /app
+    environment:
+      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow.db
+      - MLFLOW_DEFAULT_ARTIFACT_ROOT=file:///app/mlruns
+    command: >
+      bash -c "
+      echo '🎯 Starting MLflow Tracking Server...' &&
+      mlflow server 
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root file:///app/mlruns
+      --host 0.0.0.0 
+      --port 5000
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - jm_network
+    restart: unless-stopped
+
+  mlflow-training:
+    container_name: mlflow_training
+    build:
+      context: ./MLFlow
+      dockerfile: Dockerfile.mlflow.training
+      args:
+        - PYTHON_VERSION=${PYTHON_VERSION:-3.9}
+        - MLFLOW_VERSION=${MLFLOW_VERSION:-2.8.0}
+        - INSTALL_GPU_SUPPORT=${INSTALL_GPU_SUPPORT:-false}
+    volumes:
+      - ./MLFlow/mlruns:/app/mlruns:rw
+      - ./MLFlow/data:/app/data:rw
+      - ./MLFlow/src:/app/src:rw
+      - ./MLFlow/config:/app/config:rw
+      - ./MLFlow/scripts:/app/scripts:rw
+      - ./MLFlow/logs:/app/logs:rw
+      - ./MLFlow/models:/app/models:rw
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow-tracking:5000
+      - MLFLOW_ARTIFACT_ROOT=/app/mlruns
+      - MLFLOW_EXPERIMENT_NAME=${EXPERIMENT_NAME:-apple_demand_experiment}
+      - MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING=true
+      - MODEL_NAME=${MODEL_NAME:-apple_demand_predictor}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - OMP_NUM_THREADS=4
+      - OPENBLAS_NUM_THREADS=4
+    working_dir: /app
+    depends_on:
+      mlflow-tracking:
+        condition: service_healthy
+    networks:
+      - jm_network
+    profiles:
+      - training
+    deploy:
+      resources:
+        limits:
+          cpus: "${TRAINING_CPU_LIMIT:-4.0}"
+          memory: ${TRAINING_MEMORY_LIMIT:-8G}
+        reservations:
+          cpus: "2.0"
+          memory: 4G
+    restart: unless-stopped
+
+  mlflow-model:
+    container_name: mlflow_model
+    build:
+      context: ./MLFlow
+      dockerfile: Dockerfile.mlflow.model
+      args:
+        - MLFLOW_VERSION=${MLFLOW_VERSION:-2.8.0}
+        - INSTALL_EXTRAS=true
+        - BUILD_ENV=production
+        - MODEL_PORT=${MODEL_PORT:-5001}
+    ports:
+      - "${MODEL_EXTERNAL_PORT:-8000}:${MODEL_PORT:-5001}"
+    volumes:
+      - ./MLFlow/mlruns:/app/mlruns:ro
+      - ./MLFlow/models:/app/models:ro
+    environment:
+      - TRACKING_URI=http://mlflow-tracking:5000
+      - MODEL_URI=runs:/7b46206452614e5a93e98d556fe2bd37/apple_demand_model
+      - MODEL_PORT=5001
+      - DEBUG=true
+      - LOG_LEVEL=DEBUG
+      - PYTHONUNBUFFERED=1
+      - MLFLOW_TRACKING_URI=http://mlflow-tracking:5000
+      - MLFLOW_ARTIFACT_ROOT=/app/mlruns
+      - MLFLOW_EXPERIMENT_ID=2
+    working_dir: /app
+    depends_on:
+      mlflow-tracking:
+        condition: service_healthy
+    networks:
+      - jm_network
+    profiles:
+      - training
+      - development
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 1G
+    restart: unless-stopped
+
+  # ===========================================
+  # SERVICES APPLICATION (BACKEND + FRONTEND)
+  # ===========================================
+  backend:
+    image: jm-backend
+    container_name: jm-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    networks:
+      - jm_network
+    ports:
+      - "8082:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/usr/src/backend
+    depends_on:
+      - mlflow-tracking
+    restart: unless-stopped
+
+  frontend:
+    image: jm-frontend
+    container_name: jm-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dash
+    networks:
+      - jm_network
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ===========================================
+  # SERVICES ETL
+  # ===========================================
+  job-normalizer:
+    build:
+      context: ./pipeline/src
+      dockerfile: Dockerfile
+    container_name: job_normalizer
+    env_file:
+      - ./pipeline/src/.env
+    volumes:
+      - ./pipeline/src/data:/app/data
+    networks:
+      - jm_network
+    command: >
+      python3 normalizer.py
+    restart: unless-stopped
+    profiles:
+      - etl
+
+  jm-elt-snowflake:
+    image: jm-elt-snowflake
+    container_name: jm-elt-snowflake
+    build:
+      context: ./pipeline/src/snowflake/
+      dockerfile: Dockerfile
+    networks:
+      - jm_network
+    env_file:
+      - ./pipeline/src/.env
+    volumes:
+      - ./pipeline/src/snowflake:/usr/src/snowflake
+      - ./pipeline/src/data:/usr/src/data
+    restart: unless-stopped
+    profiles:
+      - etl
+
+  jm-elt-dbt:
+    image: jm-elt-dbt
+    container_name: jm-elt-dbt
+    build:
+      context: ./snowflake/DBT/
+      dockerfile: Dockerfile
+    networks:
+      - jm_network
+    env_file:
+      - ./snowflake/DBT/.env
+    volumes:
+      - ./snowflake/DBT:/usr/src/DBT
+      
+    restart: unless-stopped
+    profiles:
+      - etl
+
+networks:
+  jm_network:
+    name: jm_network
+
+volumes:
+  mlflow_data:
+    driver: local
+  airflow_postgres_data:
+    driver: local
+
+# ===========================================
+# PROFILS DISPONIBLES
+# ===========================================
+# - training     : Service d'entraînement ML
+# - development  : Training + JupyterLab
+# - monitoring   : Prometheus pour monitoring
+# - postgres     : Base PostgreSQL au lieu de SQLite
+# - cache        : Redis pour cache
+# - vscode       : VS Code dans le navigateur
+# - docs         : Documentation avec MkDocs
+# - airflow      : Services Airflow (webserver, scheduler, worker)
+
+# Exemples d'utilisation :
+# docker-compose up                    # Tous les services de base
+# docker-compose --profile training up # Ajoute les services ML
+# docker-compose --profile development up # Ajoute les services de développement
+# docker-compose --profile airflow up  # Ajoute les services Airflow 
